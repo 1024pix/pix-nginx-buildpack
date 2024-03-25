@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+#
+# This script is used for the [Nginx
+# buildpack](github.com/Scalingo/nginx-buildpack/). Please refer to this page
+# (https://www.notion.so/scalingooriginal/New-Nginx-Version-936b92e173a74f5ab0cd59e5155a4880)
+# on how to use it.
+#
+
+set -e
+
+if [ -n "$BUILDPACK_DEBUG" ]; then
+  set -x
+fi
+
+basedir="$( cd -P "$( dirname "$0" )" && pwd )"
+
+source "$basedir/../bin/common.sh"
+source "$basedir/../config/versions.sh"
+source "$basedir/lib/utils"
+
+nginx_version="${1:-$default_nginx_version}"
+
+tempdir=$(mktmpdir http_redis)
+cd $tempdir
+
+curl --location --remote-name --silent "https://nginx.org/download/nginx-${nginx_version}.tar.gz"
+tar -xzf "nginx-${nginx_version}.tar.gz"
+
+
+cd "nginx-${nginx_version}"
+
+HTTP_REDIS_VERSION=${HTTP_REDIS_VERSION:-$default_http_redis}
+HTTP_REDIS_NGINX_DIR="ngx_http_redis-${HTTP_REDIS_VERSION}"
+HTTP_REDIS_TARBALL="ngx_http_redis-${HTTP_REDIS_VERSION}.tar.gz"
+HTTP_REDIS_URL="https://people.freebsd.org/~osa/${HTTP_REDIS_TARBALL}"
+
+status "Downloading http redis module ${HTTP_REDIS_VERSION}"
+
+curl --remote-name --location --silent "${HTTP_REDIS_URL}"
+tar -xzvf "${HTTP_REDIS_TARBALL}"
+
+
+mkdir modules
+
+./configure --add-dynamic-module="${tempdir}/nginx-${nginx_version}/${HTTP_REDIS_NGINX_DIR}"
+
+make modules
+
+if test -f "${tempdir}/nginx-${nginx_version}/objs/ngx_http_redis_module.so"; then
+  status "HTTP redis module compiled available at ${tempdir}/nginx-${nginx_version}/objs/ngx_http_redis_module.so"
+else
+  status "Error while creating HTTP Redis module"
+fi
+
+cp ${tempdir}/nginx-${nginx_version}/objs/ngx_http_redis_module.so /build
