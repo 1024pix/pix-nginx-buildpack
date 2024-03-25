@@ -18,7 +18,7 @@ source "$basedir/../bin/common.sh"
 source "$basedir/../config/versions.sh"
 source "$basedir/../support/lib/utils"
 
-nginx_version="${1:-$default_nginx_version}"
+nginx_version="${default_nginx_version}"
 
 tempdir=$(mktmpdir http_redis)
 cd $tempdir
@@ -29,7 +29,7 @@ tar -xzf "nginx-${nginx_version}.tar.gz"
 
 cd "nginx-${nginx_version}"
 
-HTTP_REDIS_VERSION=${HTTP_REDIS_VERSION:-$default_http_redis}
+HTTP_REDIS_VERSION=${default_http_redis}
 HTTP_REDIS_NGINX_DIR="ngx_http_redis-${HTTP_REDIS_VERSION}"
 HTTP_REDIS_TARBALL="ngx_http_redis-${HTTP_REDIS_VERSION}.tar.gz"
 HTTP_REDIS_URL="https://people.freebsd.org/~osa/${HTTP_REDIS_TARBALL}"
