@@ -76,7 +76,7 @@ else
 fi
 
 # Copy to Scalingo Nginx
-cp "${tempdir}/nginx-${nginx_version}/objs/ngx_http_redis_module.so" "\$basedir/vendor/nginx/modules/"
+cp "${tempdir}/nginx-${nginx_version}/objs/ngx_http_redis_module.so" "$BUILD_DIR/vendor/nginx/modules/"
 
 # Update Scalingo  Nginx conf
-sed -i '1iload_module modules/ngx_http_modsecurity_module.so;' "\$basedir/vendor/nginx/conf/nginx.conf"
+sed -i '1iload_module modules/ngx_http_modsecurity_module.so;' "$BUILD_DIR/vendor/nginx/conf/nginx.conf"
