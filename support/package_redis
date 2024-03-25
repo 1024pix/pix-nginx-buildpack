@@ -42,7 +42,30 @@ tar -xzvf "${HTTP_REDIS_TARBALL}"
 
 mkdir modules
 
-./configure --add-dynamic-module="${tempdir}/nginx-${nginx_version}/${HTTP_REDIS_NGINX_DIR}"
+zlib_version="$default_zlib_version"
+
+if [ -z "$NGINX_PCRE_VERSION" ]; then
+  # From https://sourceforge.net/projects/pcre/files/pcre/
+  NGINX_PCRE_VERSION=8.45
+fi
+
+pcre_version="$NGINX_PCRE_VERSION"
+
+status "Downloading dependency PCRE ${pcre_version}"
+
+curl --location --remote-name --silent "https://sourceforge.net/projects/pcre/files/pcre/${pcre_version}/pcre-${pcre_version}.tar.gz"
+tar -xzf "pcre-${pcre_version}.tar.gz"
+
+status "Downloading dependency zlib ${zlib_version}"
+
+zlib_filename="zlib-${zlib_version}.tar.gz"
+curl --location --remote-name --silent "https://github.com/madler/zlib/releases/download/v1.2.13/${zlib_filename}"
+file "$zlib_filename"
+tar -xzf "$zlib_filename"
+
+./configure --prefix=/app/vendor/nginx --with-http_ssl_module --with-http_auth_request_module --with-pcre="./pcre-${pcre_version}" --with-zlib="./zlib-${zlib_version}" --with-http_realip_module --add-dynamic-module="${tempdir}/nginx-${nginx_version}/${HTTP_REDIS_NGINX_DIR}"
+
+make
 
 make modules
 
