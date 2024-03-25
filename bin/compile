@@ -16,7 +16,7 @@ basedir="$( cd -P "$( dirname "$0" )" && pwd )"
 
 source "$basedir/../bin/common.sh"
 source "$basedir/../config/versions.sh"
-source "$basedir/lib/utils"
+source "$basedir/../support/lib/utils"
 
 nginx_version="${1:-$default_nginx_version}"
 
@@ -75,7 +75,7 @@ else
   status "Error while creating HTTP Redis module"
 fi
 
-# Copy to Scali ngo Nginx
+# Copy to Scalingo Nginx
 cp "${tempdir}/nginx-${nginx_version}/objs/ngx_http_redis_module.so" "/app/vendor/nginx/modules/"
 
 # Update Scalingo  Nginx conf
