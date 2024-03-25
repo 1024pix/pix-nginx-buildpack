@@ -76,6 +76,7 @@ else
 fi
 
 # Copy to Scalingo Nginx
+BUILD_DIR="$1"
 cp "${tempdir}/nginx-${nginx_version}/objs/ngx_http_redis_module.so" "$BUILD_DIR/vendor/nginx/modules/"
 
 # Update Scalingo  Nginx conf
