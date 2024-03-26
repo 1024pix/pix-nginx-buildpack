@@ -15,8 +15,8 @@ source "$basedir/../support/lib/utils"
 BUILD_DIR="$1"
 
 mkdir -p "${BUILD_DIR}/vendor/nginx"
-mkdir -p "${BUILD_DIR}//vendor/nginx/conf"
-mkdir -p "${BUILD_DIR}//bin"
+mkdir -p "${BUILD_DIR}/vendor/nginx/conf"
+mkdir -p "${BUILD_DIR}/bin"
 
 openresty_version="${default_openresty_version}"
 
