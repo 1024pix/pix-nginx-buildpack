@@ -12,9 +12,11 @@ source "$basedir/../bin/common.sh"
 source "$basedir/../config/versions.sh"
 source "$basedir/../support/lib/utils"
 
-mkdir -p "/app/vendor/nginx"
-mkdir -p "/app/vendor/nginx/conf"
-mkdir -p "/app/bin"
+BUILD_DIR="$1"
+
+mkdir -p "${BUILD_DIR}/vendor/nginx"
+mkdir -p "${BUILD_DIR}//vendor/nginx/conf"
+mkdir -p "${BUILD_DIR}//bin"
 
 openresty_version="${default_openresty_version}"
 
@@ -63,7 +65,7 @@ tar -xzf "$zlib_filename"
 
 status "Installing OpenResty ${openresty_version}"
 
-./configure --prefix=/app/vendor/nginx --with-http_ssl_module --with-http_auth_request_module --with-pcre="./pcre-${pcre_version}" --with-zlib="./zlib-${zlib_version}" --with-http_realip_module
+./configure --prefix="${BUILD_DIR}/vendor/nginx" --with-http_ssl_module --with-http_auth_request_module --with-pcre="./pcre-${pcre_version}" --with-zlib="./zlib-${zlib_version}" --with-http_realip_module
 make
 make install
 
@@ -88,9 +90,18 @@ export PATH=/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:$PATH
 #######
 # Prepa du terrain
 
-cp ../config/openresty/nginx.conf /app/vendor/nginx/conf
+test ! -d "$BUILD_DIR/.profile.d" && mkdir -p "$BUILD_DIR/.profile.d" || true
 
-cat > "/app/bin/run" <<SH
+cat > "$BUILD_DIR/.profile.d/nginx.sh" <<SH
+export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/app/bin:${VENDORED_NGINX}/sbin:/app/vendor/bin:\$PATH
+export APP_BUILD_TIME=$(date +%Y%m%d%H%M%S)
+SH
+
+source "$BUILD_DIR/.profile.d/nginx.sh"
+
+cp "$basedir/../config/nginx.conf.erb" "$BUILD_DIR/base_nginx.conf.erb"
+
+cat > "${BUILD_DIR}/bin/run" <<SH
 #!/usr/bin/env bash
 
 basedir="\$( cd -P "\$(dirname \$(dirname "\$0" ))" && pwd )"
@@ -98,11 +109,26 @@ pmsgr=/tmp/pmsgr
 rm -f \$pmsgr
 mkfifo \$pmsgr
 
-PATH=/usr/local/openresty/nginx/sbin:$PATH
+PATH=\$basedir/vendor/nginx/sbin:$PATH
 export PATH
 
+[ -f \$basedir/servers.conf.erb ] && export HAS_SERVER_CONF=true
+
+erb base_nginx.conf.erb > "\$basedir/vendor/nginx/conf/nginx.conf"
+
+if [ -f "\$basedir/nginx.conf.erb" ] ; then
+  erb "\$basedir/nginx.conf.erb" > "\$basedir/vendor/nginx/conf/site.conf"
+elif [ -f \$basedir/servers.conf.erb ] ; then
+  erb "\$basedir/servers.conf.erb" > "\$basedir/vendor/nginx/conf/servers.conf"
+elif [ -f \$basedir/nginx.conf ] ; then
+  cp "\$basedir/nginx.conf" "\$basedir/vendor/nginx/conf/site.conf"
+else
+  echo 'nginx.conf or nginx.conf.erb should be located at the root of the project'
+  exit 1
+fi
+
 (
-    nginx -c "/app/vendor/nginx/conf/nginx.conf"
+    nginx -p "\$basedir/vendor/nginx" -c "\$basedir/vendor/nginx/conf/nginx.conf"
     echo "nginx" > \$pmsgr
 ) &
 
@@ -111,4 +137,4 @@ echo "Boot failed: \$exitproc"
 exit 1
 SH
 
-chmod +x "/app/bin/run"
+chmod +x "${BUILD_DIR}/bin/run"
