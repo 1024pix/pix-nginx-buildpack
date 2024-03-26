@@ -17,11 +17,6 @@ openresty_version="${default_openresty_version}"
 tempdir=$(mktmpdir openresty)
 cd $tempdir
 
-status "Installing Open Resty dependencies"
-
-apt-get install libpcre3-dev \
-    libssl-dev perl make build-essential curl git
-
 status "Downloading OpenResty ${openresty_version}"
 
 curl --location --remote-name --silent "https://openresty.org/download/openresty-${openresty_version}.tar.gz"
