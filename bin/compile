@@ -1,10 +1,4 @@
 #!/usr/bin/env bash
-#
-# This script is used for the [Nginx
-# buildpack](github.com/Scalingo/nginx-buildpack/). Please refer to this page
-# (https://www.notion.so/scalingooriginal/New-Nginx-Version-936b92e173a74f5ab0cd59e5155a4880)
-# on how to use it.
-#
 
 set -e
 
@@ -18,29 +12,34 @@ source "$basedir/../bin/common.sh"
 source "$basedir/../config/versions.sh"
 source "$basedir/../support/lib/utils"
 
-nginx_version="${default_nginx_version}"
+openresty_version="${default_openresty_version}"
 
-tempdir=$(mktmpdir http_redis)
+tempdir=$(mktmpdir openresty)
 cd $tempdir
 
-curl --location --remote-name --silent "https://nginx.org/download/nginx-${nginx_version}.tar.gz"
-tar -xzf "nginx-${nginx_version}.tar.gz"
+status "Installing Open Resty dependencies"
+
+apt-get install libpcre3-dev \
+    libssl-dev perl make build-essential curl git
+
+status "Downloading OpenResty ${openresty_version}"
+
+curl --location --remote-name --silent "https://openresty.org/download/openresty-${openresty_version}.tar.gz"
+tar -xzf "openresty-${openresty_version}.tar.gz"
+cd "openresty-${openresty_version}"
+
+# HTTP_REDIS_VERSION=${default_http_redis}
+# HTTP_REDIS_NGINX_DIR="ngx_http_redis-${HTTP_REDIS_VERSION}"
+# HTTP_REDIS_TARBALL="ngx_http_redis-${HTTP_REDIS_VERSION}.tar.gz"
+# HTTP_REDIS_URL="https://people.freebsd.org/~osa/${HTTP_REDIS_TARBALL}"
+
+# status "Downloading http redis module ${HTTP_REDIS_VERSION}"
+
+# curl --remote-name --location --silent "${HTTP_REDIS_URL}"
+# tar -xzvf "${HTTP_REDIS_TARBALL}"
 
 
-cd "nginx-${nginx_version}"
-
-HTTP_REDIS_VERSION=${default_http_redis}
-HTTP_REDIS_NGINX_DIR="ngx_http_redis-${HTTP_REDIS_VERSION}"
-HTTP_REDIS_TARBALL="ngx_http_redis-${HTTP_REDIS_VERSION}.tar.gz"
-HTTP_REDIS_URL="https://people.freebsd.org/~osa/${HTTP_REDIS_TARBALL}"
-
-status "Downloading http redis module ${HTTP_REDIS_VERSION}"
-
-curl --remote-name --location --silent "${HTTP_REDIS_URL}"
-tar -xzvf "${HTTP_REDIS_TARBALL}"
-
-
-mkdir modules
+# mkdir modules
 
 zlib_version="$default_zlib_version"
 
@@ -63,21 +62,58 @@ curl --location --remote-name --silent "https://github.com/madler/zlib/releases/
 file "$zlib_filename"
 tar -xzf "$zlib_filename"
 
-./configure --prefix=/app/vendor/nginx --with-http_ssl_module --with-http_auth_request_module --with-pcre="./pcre-${pcre_version}" --with-zlib="./zlib-${zlib_version}" --with-http_realip_module --add-dynamic-module="${tempdir}/nginx-${nginx_version}/${HTTP_REDIS_NGINX_DIR}"
+status "Installing OpenResty ${openresty_version}"
 
+./configure --with-http_ssl_module --with-http_auth_request_module --with-pcre="./pcre-${pcre_version}" --with-zlib="./zlib-${zlib_version}" --with-http_realip_module
 make
+make install
 
-make modules
+export PATH=/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:$PATH
 
-if test -f "${tempdir}/nginx-${nginx_version}/objs/ngx_http_redis_module.so"; then
-  status "HTTP redis module compiled available at ${tempdir}/nginx-${nginx_version}/objs/ngx_http_redis_module.so"
-else
-  status "Error while creating HTTP Redis module"
-fi
+# make modules
 
-# Copy to Scalingo Nginx
-BUILD_DIR="$1"
-cp "${tempdir}/nginx-${nginx_version}/objs/ngx_http_redis_module.so" "$BUILD_DIR/vendor/nginx/modules/"
+# if test -f "${tempdir}/nginx-${nginx_version}/objs/ngx_http_redis_module.so"; then
+#   status "HTTP redis module compiled available at ${tempdir}/nginx-${nginx_version}/objs/ngx_http_redis_module.so"
+# else
+#   status "Error while creating HTTP Redis module"
+# fi
 
-# Update Scalingo  Nginx conf
-sed -i '1iload_module modules/ngx_http_modsecurity_module.so;' "$BUILD_DIR/vendor/nginx/conf/nginx.conf"
+# # Copy to Scalingo Nginx
+# BUILD_DIR="$1"
+# cp "${tempdir}/nginx-${nginx_version}/objs/ngx_http_redis_module.so" "$BUILD_DIR/vendor/nginx/modules/"
+
+# # Update Scalingo  Nginx conf
+# sed -i '1iload_module modules/ngx_http_modsecurity_module.so;' "$BUILD_DIR/vendor/nginx/conf/nginx.conf"
+
+
+#######
+# Prepa du terrain
+
+mkdir -p "/app/vendor/nginx"
+mkdir -p "/app/vendor/nginx/conf"
+mkdir -p "/app/bin"
+
+cp ../config/openresty/nginx.conf /app/vendor/nginx/conf
+
+cat > "/app/bin/run" <<SH
+#!/usr/bin/env bash
+
+basedir="\$( cd -P "\$(dirname \$(dirname "\$0" ))" && pwd )"
+pmsgr=/tmp/pmsgr
+rm -f \$pmsgr
+mkfifo \$pmsgr
+
+PATH=/usr/local/openresty/nginx/sbin:$PATH
+export PATH
+
+(
+    nginx -c "/app/vendor/nginx/conf/nginx.conf"
+    echo "nginx" > \$pmsgr
+) &
+
+read exitproc <\$pmsgr
+echo "Boot failed: \$exitproc"
+exit 1
+SH
+
+chmod +x "/app/bin/run"
