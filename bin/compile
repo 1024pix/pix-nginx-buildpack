@@ -12,6 +12,10 @@ source "$basedir/../bin/common.sh"
 source "$basedir/../config/versions.sh"
 source "$basedir/../support/lib/utils"
 
+mkdir -p "/app/vendor/nginx"
+mkdir -p "/app/vendor/nginx/conf"
+mkdir -p "/app/bin"
+
 openresty_version="${default_openresty_version}"
 
 tempdir=$(mktmpdir openresty)
@@ -59,7 +63,7 @@ tar -xzf "$zlib_filename"
 
 status "Installing OpenResty ${openresty_version}"
 
-./configure --with-http_ssl_module --with-http_auth_request_module --with-pcre="./pcre-${pcre_version}" --with-zlib="./zlib-${zlib_version}" --with-http_realip_module
+./configure --prefix=/app/vendor/nginx --with-http_ssl_module --with-http_auth_request_module --with-pcre="./pcre-${pcre_version}" --with-zlib="./zlib-${zlib_version}" --with-http_realip_module
 make
 make install
 
@@ -83,10 +87,6 @@ export PATH=/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:$PATH
 
 #######
 # Prepa du terrain
-
-mkdir -p "/app/vendor/nginx"
-mkdir -p "/app/vendor/nginx/conf"
-mkdir -p "/app/bin"
 
 cp ../config/openresty/nginx.conf /app/vendor/nginx/conf
 
