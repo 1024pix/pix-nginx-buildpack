@@ -14,15 +14,12 @@ source "$basedir/../support/lib/utils"
 
 BUILD_DIR="$1"
 
-mkdir -p "${BUILD_DIR}/vendor/nginx"
-mkdir -p "${BUILD_DIR}/vendor/nginx/conf"
-mkdir -p "${BUILD_DIR}/vendor/nginx/logs"
-mkdir -p "${BUILD_DIR}/bin"
+# mkdir -p "${BUILD_DIR}/vendor/nginx"
+# mkdir -p "${BUILD_DIR}/vendor/nginx/conf"
+# mkdir -p "${BUILD_DIR}/vendor/nginx/logs"
+# mkdir -p "${BUILD_DIR}/bin"
 
 openresty_version="${default_openresty_version}"
-
-tempdir=$(mktmpdir openresty)
-cd $tempdir
 
 status "Downloading OpenResty ${openresty_version}"
 
@@ -66,11 +63,10 @@ tar -xzf "$zlib_filename"
 
 status "Installing OpenResty ${openresty_version}"
 
-./configure --prefix="/app/vendor/nginx" --with-http_ssl_module --with-http_auth_request_module --with-pcre="./pcre-${pcre_version}" --with-zlib="./zlib-${zlib_version}" --with-http_realip_module --with-luajit
+./configure --prefix="${BUILD_DIR}/vendor/nginx" --with-http_ssl_module --with-http_auth_request_module --with-pcre="./pcre-${pcre_version}" --with-zlib="./zlib-${zlib_version}" --with-http_realip_module --with-luajit
 make
 make install
 
-export PATH=/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:$PATH
 
 # make modules
 
@@ -105,6 +101,7 @@ source "$BUILD_DIR/.profile.d/nginx.sh"
 
 cp "$basedir/../config/nginx.conf.erb" "$BUILD_DIR/base_nginx.conf.erb"
 
+mkdir -p "${BUILD_DIR}/bin"
 cat > "${BUILD_DIR}/bin/run" <<SH
 #!/usr/bin/env bash
 
@@ -115,6 +112,13 @@ mkfifo \$pmsgr
 
 PATH=\$basedir/vendor/nginx/sbin:$PATH
 export PATH
+
+mkdir -p "/app/vendor/nginx/logs"
+
+ls -la /app/
+ls -la /app/vendor/
+ls -la /app/vendor/nginx
+ls -la "\$basedir"
 
 [ -f \$basedir/servers.conf.erb ] && export HAS_SERVER_CONF=true
 
@@ -142,3 +146,4 @@ exit 1
 SH
 
 chmod +x "${BUILD_DIR}/bin/run"
+
