@@ -16,6 +16,7 @@ BUILD_DIR="$1"
 
 mkdir -p "${BUILD_DIR}/vendor/nginx"
 mkdir -p "${BUILD_DIR}/vendor/nginx/conf"
+mkdir -p "${BUILD_DIR}/vendor/nginx/logs"
 mkdir -p "${BUILD_DIR}/bin"
 
 openresty_version="${default_openresty_version}"
@@ -117,21 +118,21 @@ export PATH
 
 [ -f \$basedir/servers.conf.erb ] && export HAS_SERVER_CONF=true
 
-erb base_nginx.conf.erb > "\$basedir/vendor/nginx/conf/nginx.conf"
+erb base_nginx.conf.erb > "\$basedir/vendor/nginx/nginx/conf/nginx.conf"
 
 if [ -f "\$basedir/nginx.conf.erb" ] ; then
-  erb "\$basedir/nginx.conf.erb" > "\$basedir/vendor/nginx/conf/site.conf"
+  erb "\$basedir/nginx.conf.erb" > "\$basedir/vendor/nginx/nginx/conf/site.conf"
 elif [ -f \$basedir/servers.conf.erb ] ; then
-  erb "\$basedir/servers.conf.erb" > "\$basedir/vendor/nginx/conf/servers.conf"
+  erb "\$basedir/servers.conf.erb" > "\$basedir/vendor/nginx/nginx/conf/servers.conf"
 elif [ -f \$basedir/nginx.conf ] ; then
-  cp "\$basedir/nginx.conf" "\$basedir/vendor/nginx/conf/site.conf"
+  cp "\$basedir/nginx.conf" "\$basedir/vendor/nginx/nginx/conf/site.conf"
 else
   echo 'nginx.conf or nginx.conf.erb should be located at the root of the project'
   exit 1
 fi
 
 (
-    nginx  -p "\$basedir/vendor/nginx" -c "\$basedir/vendor/nginx/conf/nginx.conf"
+    nginx  -p "\$basedir/vendor/nginx" -c "\$basedir/vendor/nginx/nginx/conf/nginx.conf"
     echo "nginx" > \$pmsgr
 ) &
 
