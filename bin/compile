@@ -66,7 +66,7 @@ tar -xzf "$zlib_filename"
 
 status "Installing OpenResty ${openresty_version}"
 
-./configure --prefix="${BUILD_DIR}/vendor/nginx" --with-http_ssl_module --with-http_auth_request_module --with-pcre="./pcre-${pcre_version}" --with-zlib="./zlib-${zlib_version}" --with-http_realip_module --with-luajit
+./configure --prefix="/app/vendor/nginx" --with-http_ssl_module --with-http_auth_request_module --with-pcre="./pcre-${pcre_version}" --with-zlib="./zlib-${zlib_version}" --with-http_realip_module --with-luajit
 make
 make install
 
