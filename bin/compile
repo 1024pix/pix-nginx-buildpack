@@ -63,9 +63,12 @@ tar -xzf "$zlib_filename"
 
 status "Installing OpenResty ${openresty_version}"
 
-./configure --prefix="${BUILD_DIR}/vendor/nginx" --with-http_ssl_module --with-http_auth_request_module --with-pcre="./pcre-${pcre_version}" --with-zlib="./zlib-${zlib_version}" --with-http_realip_module --with-luajit
+./configure --prefix="/app/vendor/nginx" --with-http_ssl_module --with-http_auth_request_module --with-pcre="./pcre-${pcre_version}" --with-zlib="./zlib-${zlib_version}" --with-http_realip_module --with-luajit
 make
-make install
+make install DESTDIR="${BUILD_DIR}"
+
+mv "${BUILD_DIR}/app/vendor" "${BUILD_DIR}/vendor"
+rm -rf "${BUILD_DIR}/app"
 
 
 # make modules
@@ -115,10 +118,20 @@ export PATH
 
 mkdir -p "/app/vendor/nginx/logs"
 
+echo "------- app ---------------------------------------------------------"
+echo "----------------------------------------------------------------"
 ls -la /app/
+echo "----------------------------------------------------------------"
+echo "------------------ vendor  ----------------------------------------------"
 ls -la /app/vendor/
+echo "----------------------------------------------------------------"
+echo "-----------------   nginx -----------------------------------------------"
 ls -la /app/vendor/nginx
+echo "----------------------------------------------------------------"
+echo "----------------- basedir-----------------------------------------------"
 ls -la "\$basedir"
+echo "----------------------------------------------------------------"
+echo "----------------------------------------------------------------"
 
 [ -f \$basedir/servers.conf.erb ] && export HAS_SERVER_CONF=true
 
