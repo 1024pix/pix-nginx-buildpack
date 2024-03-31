@@ -67,6 +67,10 @@ status "Installing OpenResty ${openresty_version}"
 make
 make install DESTDIR="${BUILD_DIR}"
 
+# Pix OpenResty modules
+cp -R "$basedir/../config/openresty/modules/pix" "${BUILD_DIR}/app/vendor/nginx/lualib/pix"
+
+
 mv "${BUILD_DIR}/app/vendor" "${BUILD_DIR}/vendor"
 rm -rf "${BUILD_DIR}/app"
 

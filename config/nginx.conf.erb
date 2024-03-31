@@ -28,6 +28,11 @@ http {
     client_max_body_size 100m;
     client_body_timeout 600s;
 
+    init_by_lua_block {
+      -- make available Pix LUA module at server startup
+      require "pix.rate"
+    }
+
     upstream php {
         server unix:/tmp/php-fpm.sock max_fails=3 fail_timeout=3s;
         keepalive 16;
